@@ -1,11 +1,7 @@
 import streamlit as st
-#from sim import combined
-import numpy as np
-import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import plotly.figure_factory as ff
-import plotly as plt
+
 
 # !/usr/bin/env python3.5
 # -*- coding: utf-8 -*-
