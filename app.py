@@ -790,18 +790,21 @@ with st.container():
             uot_df = calculations[0][calculations[0]['cat'] == 'uot']
             fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
             st.write(fig1)
+            st.dataframe(uot_df)
         with st.expander('Customer average waiting time in line'):
             tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
             fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in tq_df['mode'].unique():
                 fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
             st.write(fig2)
+            st.dataframe(tq_df)
         with st.expander('Average number of customers in line'):
             iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
             fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in iq_df['mode'].unique():
                 fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
             st.write(fig3)
+            st.dataframe(tq_df)
 
 
     #st.dataframe(calculations[0])
