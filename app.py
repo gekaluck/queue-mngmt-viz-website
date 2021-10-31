@@ -790,21 +790,60 @@ with st.container():
             uot_df = calculations[0][calculations[0]['cat'] == 'uot']
             fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
             st.write(fig1)
-            st.dataframe(uot_df)
+            st.dataframe(uot_df.groupby('mode').mean()['y'].rename(columns={'y':'Average utilization'}))
         with st.expander('Customer average waiting time in line'):
             tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
             fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in tq_df['mode'].unique():
                 fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
             st.write(fig2)
-            st.dataframe(tq_df)
+            st.dataframe(tq_df.groupby('mode').mean()['y'].rename(columns={'y':'Average waiting time in line'}))
         with st.expander('Average number of customers in line'):
             iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
             fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in iq_df['mode'].unique():
                 fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
             st.write(fig3)
-            st.dataframe(tq_df)
+            st.dataframe(tq_df.groupby('mode').mean()['y'].rename(columns={'y':'Average number of customers in line'}))
+
+with st.container():
+    st.subheader("Detailed explanation: ", anchor=None)
+    st.write("this section tries to calculate service system performance metrics theoretical "
+             "values(using results from queuering theory and Little's Law) and compares them with values observed"
+             " directly from the simulation restuls")
+    if finished == 1:
+        with st.expander('Random Assignment'):
+            st.write('Average utilization:')
+            st.code('u = Ra/Rp = {}/{} = {} compared to the observed value of {}'.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
+            st.write('Average number of people in the queue:')
+            st.code('Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {} compared to the observed value of {}'.format(calculations[1]['Iq_rand']))
+            st.write('Average number of people served at a point in time:')
+            st.code('Ip = u*c ={} compared to the observed value of '.format(tp, a * workers_num, calculations[1]['Ip_rand']))
+            st.write('Average number of people in the process:')
+            st.code('I = Ip + Iq = {} + {} = compared to the observed value of {}'.format(calculations[1]['Ip_rand'], calculations[1]['Iq_rand'],
+                                                      calculations[1]['I_rand']))
+
+        with st.expander('Allocation to the shortest line'):
+            st.write('Average utilization:')
+            st.code('u = Ra/Rp = {}/{} = {} compared to the observed value of {} '.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_sep']))
+            st.write('Average number of people in the queue:')
+            st.code('Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {}'.format(calculations[1]['Iq_sep']))
+            st.write('Average number of people served at a point in time:')
+            st.code('Ip = u*c ='.format(tp, a * workers_num, calculations[1]['Ip_sep']))
+            st.write('Average number of people in the process:')
+            st.code('I = Ip + Iq = {} + {} = '.format(calculations[1]['Ip_sep'], calculations[1]['Iq_sep'],
+                                                      calculations[1]['I_sep']))
+
+        with st.expander('Pooling'):
+            st.write('Average utilization:')
+            st.code('u = Ra/Rp = {}/{} = {} compared to the observed value of {}'.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_pool']))
+            st.write('Average number of people in the queue:')
+            st.code('Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {}'.format(calculations[1]['Iq_pool']))
+            st.write('Average number of people served at a point in time:')
+            st.code('Ip = u*c ='.format(tp, a * workers_num, calculations[1]['Ip_pool']))
+            st.write('Average number of people in the process:')
+            st.code('I = Ip + Iq = {} + {} = '.format(calculations[1]['Ip_pool'], calculations[1]['Iq_pool'],
+                                                      calculations[1]['I_pool']))
 
 
     #st.dataframe(calculations[0])

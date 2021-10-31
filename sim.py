@@ -682,7 +682,8 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 
     I = (Tq+Rp)*(1/Ra)
     
-    LIq_pool = (((u**numpy.sqrt(2*(NUM_SERVERS+1)))/(1-u)) * ((((cva/Ra)**2)+((cvp/Rp)**2))/2))
+    LIq_pool = (((u**numpy.sqrt(2*(NUM_SERVERS+1)))/(1-u)) * ((((cva)**2)+((cvp)**2))/2))
+    #LIq_pool = (((u**numpy.sqrt(2*(NUM_SERVERS+1)))/(1-u)) * ((((cva/Ra)**2)+((cvp/Rp)**2))/2))
     LIp_pool = (1/Ra)*Rp
     LI_pool = (((u**numpy.sqrt(2*(NUM_SERVERS+1)))/(1-u)) * (((cva**2)+(cvp**2))/2)) + (1/Ra)*Rp
     
@@ -743,8 +744,8 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 # Rp = 5 -> Tp = 1/5
 
 
-result = combined(2.5, 9, 20000, 4, 'Exponential', 'Exponential', 0.5, 0.5)
-result[0].to_csv("output_1.csv")
+result = combined(2.5, 9, 5000, 4, 'Exponential', 'Exponential', 1, 1)
+#result[0].to_csv("output_1.csv")
 print(result[1])
 
 
