@@ -753,7 +753,7 @@ with st.container():
             a = st.number_input('Average Interarrival time ', key=16)
     with col3:
         st.subheader("Choose Process parameters", anchor=None)
-        workers_num = st.number_input('Number of workers:', key=27)
+        workers_num = st.number_input('Number of workers:', key=27, step=1)
         p_dist_select = st.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
         if p_dist_select == 'Normal':
             tp = st.number_input('Average Processing time: ', key=21)
@@ -784,122 +784,83 @@ with st.container():
             utl_df = calculations[0][calculations[0]['cat'] == 'utl']
             fig = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in utl_df['mode'].unique():
-                fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
+                fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],
+                                         mode='lines+markers', name=mod))
             st.write(fig)
         with st.expander('Average utilization'):
             uot_df = calculations[0][calculations[0]['cat'] == 'uot']
             fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
             st.write(fig1)
-            st.dataframe(uot_df.groupby('mode').mean()['y'].rename(columns={'y':'Average utilization'}))
+            st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
         with st.expander('Customer average waiting time in line'):
             tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
             fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in tq_df['mode'].unique():
-                fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
+                fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
+                                          mode='lines+markers', name=mod))
             st.write(fig2)
-            st.dataframe(tq_df.groupby('mode').mean()['y'].rename(columns={'y':'Average waiting time in line'}))
+            st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
+                                                   ' in line'}).groupby('mode').mean()['Average waiting time in line'])
         with st.expander('Average number of customers in line'):
             iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
             fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in iq_df['mode'].unique():
-                fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],mode='lines+markers', name=mod))
+                fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],
+                                          mode='lines+markers', name=mod))
             st.write(fig3)
-            st.dataframe(tq_df.groupby('mode').mean()['y'].rename(columns={'y':'Average number of customers in line'}))
+            st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
+                         mean()['Average number of customers in line'])
 
 with st.container():
+    av_u_string = 'Average utilization:'
+    av_iq_string = 'Average number of people in the queue:'
+    av_ip_string = 'Average number of people served at a point in time:'
+    av_i_string = 'Average number of people in the process:'
+    u_string = 'u = Ra/Rp = {}/{} = {} compared to the observed value of {}'
+    iq_string = 'Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {} compared to the observed value of {}'
+    ip_string = 'Ip = u*c ={} compared to the observed value of {}'
+    i_string = 'I = Ip + Iq = {} + {} = {} compared to the observed value of {}'
     st.subheader("Detailed explanation: ", anchor=None)
     st.write("this section tries to calculate service system performance metrics theoretical "
              "values(using results from queuering theory and Little's Law) and compares them with values observed"
              " directly from the simulation restuls")
     if finished == 1:
         with st.expander('Random Assignment'):
-            st.write('Average utilization:')
-            st.code('u = Ra/Rp = {}/{} = {} compared to the observed value of {}'.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
-            st.write('Average number of people in the queue:')
-            st.code('Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {} compared to the observed value of {}'.format(calculations[1]['Iq_rand']))
-            st.write('Average number of people served at a point in time:')
-            st.code('Ip = u*c ={} compared to the observed value of '.format(tp, a * workers_num, calculations[1]['Ip_rand']))
-            st.write('Average number of people in the process:')
-            st.code('I = Ip + Iq = {} + {} = compared to the observed value of {}'.format(calculations[1]['Ip_rand'], calculations[1]['Iq_rand'],
-                                                      calculations[1]['I_rand']))
+            st.write(av_u_string)
+            st.code(u_string.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
+            st.write(av_iq_string)
+            st.code(iq_string.format(calculations[1]['LIq_rs'], calculations[1]['Iq_rand']))
+            st.write(av_ip_string)
+            st.code(ip_string.format(calculations[1]['LIp_rs'], calculations[1]['Ip_rand']))
+            st.write(av_i_string)
+            st.code(i_string.format(calculations[1]['LIp_rs'],calculations[1]['LIq_rs'],
+                                    calculations[1]['LI_rs'], calculations[1]['I_rand']))
 
         with st.expander('Allocation to the shortest line'):
-            st.write('Average utilization:')
-            st.code('u = Ra/Rp = {}/{} = {} compared to the observed value of {} '.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_sep']))
-            st.write('Average number of people in the queue:')
-            st.code('Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {}'.format(calculations[1]['Iq_sep']))
-            st.write('Average number of people served at a point in time:')
-            st.code('Ip = u*c ='.format(tp, a * workers_num, calculations[1]['Ip_sep']))
-            st.write('Average number of people in the process:')
-            st.code('I = Ip + Iq = {} + {} = '.format(calculations[1]['Ip_sep'], calculations[1]['Iq_sep'],
-                                                      calculations[1]['I_sep']))
+            st.write(av_u_string)
+            # st.code(u_string.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_sep']))
+            # st.write(av_iq_string)
+            # st.code(iq_string.format(calculations[1]['LIq_sep'], calculations[1]['Iq_sep']))
+            # st.write(av_ip_string)
+            # st.code(ip_string.format(calculations[1]['LIp_sep'], calculations[1]['Ip_sep']))
+            # st.write(av_i_string)
+            # st.code(i_string.format(calculations[1]['LIp_sep'], calculations[1]['LIq_sep'],
+            #                         calculations[1]['LI_sep'], calculations[1]['I_sep']))
 
         with st.expander('Pooling'):
-            st.write('Average utilization:')
-            st.code('u = Ra/Rp = {}/{} = {} compared to the observed value of {}'.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_pool']))
-            st.write('Average number of people in the queue:')
-            st.code('Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {}'.format(calculations[1]['Iq_pool']))
-            st.write('Average number of people served at a point in time:')
-            st.code('Ip = u*c ='.format(tp, a * workers_num, calculations[1]['Ip_pool']))
-            st.write('Average number of people in the process:')
-            st.code('I = Ip + Iq = {} + {} = '.format(calculations[1]['Ip_pool'], calculations[1]['Iq_pool'],
-                                                      calculations[1]['I_pool']))
+            st.write(av_u_string)
+            st.code(u_string.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_pool']))
+            st.write(av_iq_string)
+            st.code(iq_string.format(calculations[1]['LIq_pool'],calculations[1]['Iq_pool']))
+            st.write(av_ip_string)
+            st.code(ip_string.format(calculations[1]['LIp_pool'], calculations[1]['Ip_pool']))
+            st.write(av_i_string)
+            st.code(i_string.format(calculations[1]['LIp_pool'], calculations[1]['LIq_pool'],
+                                    calculations[1]['LI_pool'], calculations[1]['I_pool']))
 
+        with st.expander("Simulation Data"):
+            st.dataframe(calculations[0])
 
-    #st.dataframe(calculations[0])
-    #st.json(calculations[1])
-    st.text("c")
-
-
-#     if imageselect == 'Linear function':
-#     st.subheader("Linear function")
-#     a_lin = int(st.text_input("Parameter a:", 1))
-#     b_lin = int(st.text_input("Parameter b:", 1))
-#     for x in x_list:
-#         y_list.append(a_lin * x + b_lin)
-#     chart_data = pd.DataFrame(y_list, x_list)
-#     fig = px.line(chart_data)
-#     fig.update_layout(showlegend=False)
-#     fig.update_yaxes(range=[-100, 100], title_text='Y')
-#     fig.update_xaxes(range=[-100, 100], title_text='X')
-#     st.write(fig)
-#
-# elif imageselect == 'Quadratic function':
-#     st.subheader("Quadratic function")
-#     a_quad = int(st.text_input("Parameter a :", 1))
-#     b_quad = int(st.text_input("Parameter b :", 2))
-#     c_quad = int(st.text_input("Parameter c:", 4))
-#     for x in x_list:
-#         y_list.append(a_quad * x ** 2 + b_quad * x + c_quad)
-#     chart_data = pd.DataFrame(y_list, x_list)
-#     fig = px.line(chart_data)
-#     fig.update_layout(showlegend=False)
-#     fig.update_yaxes(range=[-100, 100], title_text='Y')
-#     fig.update_xaxes(range=[-100, 100], title_text='X')
-#     st.write(fig)
-#
-# elif imageselect == 'Normal distribution':
-#     st.subheader("Normal distribution")
-#     n_norm = int(st.text_input("N:", 1000))
-#     mu = float(st.text_input("Mean:", 1))
-#     std = float(st.text_input("Standard deviation:", 2))
-#     rand_var = np.random.normal(mu, std, n_norm)
-#     fig = ff.create_distplot([rand_var], ['Random variable'])
-#     fig.update_layout(showlegend=False)
-#     fig.update_yaxes(range=[0, 1], title_text='Probability')
-#     fig.update_xaxes(range=[mu - 4*std, mu + 4*std], title_text='X')
-#     st.write(fig)
-#
-# elif imageselect == 'Binomial distribution':
-#     st.subheader("Binomial distribution")
-#     n_bin = int(st.text_input("n:", 1000))
-#     p = float(st.text_input("p (0.xxx):", 0.5))
-#     rand_var = np.random.binomial(n_bin, p, n_bin)
-#     fig = ff.create_distplot([rand_var], ['Random variable'])
-#     fig.update_layout(showlegend=False)
-#     fig.update_yaxes(range=[0, 1], title_text= 'Probability')
-#     fig.update_xaxes(range=[0, n_bin], title_text = 'N Successful')
-#     st.write(fig)
 
 
 
