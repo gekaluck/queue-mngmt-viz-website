@@ -734,25 +734,25 @@ col1, col2, col3 = st.columns(3)
 finished = 0
 with st.container():
     with col1:
-        st.subheader("Choose Simultaion length", anchor=None)
-        length = st.slider('Simulation length', min_value=0, max_value=100000)
+        st.subheader("Define Simultaion length", anchor=None)
+        length = st.slider('Simulation length', min_value=0, max_value=50000, step=10)
     with col2:
         st.subheader("Customer arrival parameters", anchor=None)
         q_dist_select = st.selectbox('Interarrival time distribution', DISTRIBUTIONS, key=1)
         a_std = 0
         tp_std = 0
         if q_dist_select == 'Normal':
-            a = st.number_input('Average Interarrival time: ', key=11)
-            a_std = st.number_input('Standard Deviation: ', key=12)
+            a = st.number_input('Average Interarrival time: ', key=11, step=0.1)
+            a_std = st.number_input('Standard Deviation: ', key=12, step=0.01)
         elif q_dist_select == 'logNormal':
-            a = st.number_input('Mean: ', key=13)
-            a_std = st.number_input('Standard Deviation: ', key=14)
+            a = st.number_input('Mean: ', key=13, step=0.1)
+            a_std = st.number_input('Standard Deviation: ', key=14, step=0.01)
         elif q_dist_select == 'Fixed':
-            a = st.number_input('Average Interarrival time', key=15)
+            a = st.number_input('Average Interarrival time', key=15, step=0.1)
         elif q_dist_select == 'Exponential':
-            a = st.number_input('Average Interarrival time ', key=16)
+            a = st.number_input('Average Interarrival time ', key=16, step=0.1)
     with col3:
-        st.subheader("Choose Process parameters", anchor=None)
+        st.subheader("Define Process parameters", anchor=None)
         workers_num = st.number_input('Number of workers:', key=27, step=1)
         p_dist_select = st.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
         if p_dist_select == 'Normal':
@@ -772,10 +772,10 @@ with st.container():
             calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
             #calculations = [pd.read_csv('output_1.csv')]
             finished = 1
-        st.subheader("hello")
         st.success('Done!')
     else:
-        st.subheader('Waiting')
+        if finished != 0:
+            st.subheader('Waiting')
 
 with st.container():
     st.subheader("Simultaion results: ", anchor=None)
@@ -786,27 +786,61 @@ with st.container():
             for mod in utl_df['mode'].unique():
                 fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],
                                          mode='lines+markers', name=mod))
+                fig.update_xaxes(
+                    title_text="Time",
+                    title_font={"size": 20},
+                    title_standoff=25)
+
+                fig.update_yaxes(
+                    title_text="Utilization",
+                    title_standoff=25)
+
             st.write(fig)
         with st.expander('Average utilization'):
             uot_df = calculations[0][calculations[0]['cat'] == 'uot']
             fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
             st.write(fig1)
             st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
+            fig1.update_xaxes(
+                title_text="Time",
+                title_font={"size": 20},
+                title_standoff=25)
+
+            fig1.update_yaxes(
+                title_text="Utilization",
+                title_standoff=25)
         with st.expander('Customer average waiting time in line'):
             tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
             fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
+            fig2.update_xaxes(
+                title_text="Time",
+                title_font={"size": 20},
+                title_standoff=25)
+
+            fig2.update_yaxes(
+                title_text="Average waiting time in line",
+                title_standoff=25)
             for mod in tq_df['mode'].unique():
                 fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
                                           mode='lines+markers', name=mod))
             st.write(fig2)
             st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
                                                    ' in line'}).groupby('mode').mean()['Average waiting time in line'])
+
         with st.expander('Average number of customers in line'):
             iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
             fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
             for mod in iq_df['mode'].unique():
                 fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],
                                           mode='lines+markers', name=mod))
+            fig3.update_xaxes(
+                title_text="Time",
+                title_font={"size": 20},
+                title_standoff=25)
+
+            fig3.update_yaxes(
+                title_text="Average number of customers in line",
+                title_standoff=25)
             st.write(fig3)
             st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
                          mean()['Average number of customers in line'])
@@ -821,9 +855,9 @@ with st.container():
     ip_string = 'Ip = u*c ={} compared to the observed value of {}'
     i_string = 'I = Ip + Iq = {} + {} = {} compared to the observed value of {}'
     st.subheader("Detailed explanation: ", anchor=None)
-    st.write("this section tries to calculate service system performance metrics theoretical "
-             "values(using results from queuering theory and Little's Law) and compares them with values observed"
-             " directly from the simulation restuls")
+    st.write("This section estimates service system performance metrics theoretical "
+             "values (using results from queuering theory and the Little's Law) and compares them with the values"
+             "observed from the simulation results.")
     if finished == 1:
         with st.expander('Random Assignment'):
             st.write(av_u_string)
@@ -860,6 +894,14 @@ with st.container():
 
         with st.expander("Simulation Data"):
             st.dataframe(calculations[0])
+            #st.download_button('Download file', calculations[0])
+
+if finished == 1:
+    with st.container():
+        if st.button("Clear simulation results"):
+            finished = 0
+
+
 
 
 
