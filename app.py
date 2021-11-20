@@ -676,8 +676,12 @@ def combined(Ra, Rp, SIM_TIME, NUM_SERVERS, ADist, PDist, Ra_sd, Rp_sd):
     I = (Tq + Rp) * (1 / Ra)
 
     LIq_pool = (((u ** numpy.sqrt(2 * (NUM_SERVERS + 1))) / (1 - u)) * ((((cva / Ra) ** 2) + ((cvp / Rp) ** 2)) / 2))
+    # Does not take into account whether exponential where the second term = 1 not cva, cvp = 1
+
+    #Need modification for logic reasons R= min(Ra, Rp)
     LIp_pool = (1 / Ra) * Rp
     LI_pool = (((u ** numpy.sqrt(2 * (NUM_SERVERS + 1))) / (1 - u)) * (((cva ** 2) + (cvp ** 2)) / 2)) + (1 / Ra) * Rp
+    # LIq_pool + LIp_pool ???
 
     LIq_rs = (((u ** numpy.sqrt(2 * (1 + 1))) / (1 - u)) * (((cva ** 2) + (cvp ** 2)) / 2))
     LIp_rs = u * NUM_SERVERS
