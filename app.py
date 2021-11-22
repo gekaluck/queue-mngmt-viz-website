@@ -924,6 +924,7 @@ with st.container():
         with col11:
             if st.button("Clear simulation results"):
                 finished = 0
+
         # with col12:
         #     if st.button("Clear simulation parameters"):
         #         param_1_switch = 0
