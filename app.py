@@ -736,174 +736,206 @@ st.sidebar.info("Credit info Credit info Credit info Credit info Credit info Cre
 
 col1, col2, col3 = st.columns(3)
 finished = 0
+param_1_switch = 0
+param_2_switch = 0
+start_switch = 0
+
+with st.container():
+    with col1:
+        st.header("Define simulation parameters", anchor=None)
 with st.container():
     with col1:
         st.subheader("Define Simultaion length", anchor=None)
-        length = st.slider('Simulation length', min_value=0, max_value=50000, step=10)
+        length = st.slider('Simulation length', min_value=0, max_value=20000, step=10)
+        if length > 0:
+            param_1_switch = 1
     with col2:
-        st.subheader("Customer arrival parameters", anchor=None)
-        q_dist_select = st.selectbox('Interarrival time distribution', DISTRIBUTIONS, key=1)
-        a_std = 0
-        tp_std = 0
-        if q_dist_select == 'Normal':
-            a = st.number_input('Average Interarrival time: ', key=11, step=0.1)
-            a_std = st.number_input('Standard Deviation: ', key=12, step=0.01)
-        elif q_dist_select == 'logNormal':
-            a = st.number_input('Mean: ', key=13, step=0.1)
-            a_std = st.number_input('Standard Deviation: ', key=14, step=0.01)
-        elif q_dist_select == 'Fixed':
-            a = st.number_input('Average Interarrival time', key=15, step=0.1)
-        elif q_dist_select == 'Exponential':
-            a = st.number_input('Average Interarrival time ', key=16, step=0.1)
+        if param_1_switch:
+            st.subheader("Customer arrival parameters", anchor=None)
+            q_dist_select = st.selectbox('Interarrival time distribution', DISTRIBUTIONS, key=1)
+            a_std = 0
+            tp_std = 0
+            if q_dist_select == 'Normal':
+                a = st.number_input('Average Interarrival time: ', key=11, step=0.1)
+                a_std = st.number_input('Standard Deviation: ', key=12, step=0.01)
+            elif q_dist_select == 'logNormal':
+                a = st.number_input('Mean: ', key=13, step=0.1)
+                a_std = st.number_input('Standard Deviation: ', key=14, step=0.01)
+            elif q_dist_select == 'Fixed':
+                a = st.number_input('Average Interarrival time', key=15, step=0.1)
+            elif q_dist_select == 'Exponential':
+                a = st.number_input('Average Interarrival time ', key=16, step=0.1)
+            if a > 0:
+                param_2_switch = 1
     with col3:
-        st.subheader("Define Process parameters", anchor=None)
-        workers_num = st.number_input('Number of workers:', key=27, step=1)
-        p_dist_select = st.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
-        if p_dist_select == 'Normal':
-            tp = st.number_input('Average Processing time: ', key=21)
-            tp_std = st.number_input('Standard Deviation: ', key=22)
-        elif p_dist_select == 'logNormal':
-            tp = st.number_input('Mean: ', key=23)
-            tp_std = st.number_input('Standard Deviation: ', key=24)
-        elif p_dist_select == 'Fixed':
-            tp = st.number_input('Average Processing time', key=25)
-        elif p_dist_select == 'Exponential':
-            tp = st.number_input('Average Processing time ', key=26)
+        if param_2_switch:
+            st.subheader("Define Process parameters", anchor=None)
+            workers_num = st.number_input('Number of workers:', key=27, step=1)
+            p_dist_select = st.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
+            if p_dist_select == 'Normal':
+                tp = st.number_input('Average Processing time: ', key=21)
+                tp_std = st.number_input('Standard Deviation: ', key=22)
+            elif p_dist_select == 'logNormal':
+                tp = st.number_input('Mean: ', key=23)
+                tp_std = st.number_input('Standard Deviation: ', key=24)
+            elif p_dist_select == 'Fixed':
+                tp = st.number_input('Average Processing time', key=25)
+            elif p_dist_select == 'Exponential':
+                tp = st.number_input('Average Processing time ', key=26)
+            if tp > 0:
+                start_switch = 1
 
 with st.container():
-    if st.button("Start simulation!"):
-        with st.spinner(text='In progress...'):
-            calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
-            #calculations = [pd.read_csv('output_1.csv')]
-            finished = 1
-        st.success('Done!')
-    else:
-        if finished != 0:
-            st.subheader('Waiting')
+    if start_switch:
+        if st.button("Start simulation!"):
+            with st.spinner(text='In progress...'):
+                calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
+                #calculations = [pd.read_csv('output_1.csv')]
+                finished = 1
+            st.success('Done!')
+        else:
+            if finished != 0:
+                st.subheader('Waiting')
 
 with st.container():
-    st.subheader("Simultaion results: ", anchor=None)
-    if finished == 1:
-        with st.expander('Instant utilization'):
-            utl_df = calculations[0][calculations[0]['cat'] == 'utl']
-            fig = go.Figure(layout=go.Layout(width=1200, height=600))
-            for mod in utl_df['mode'].unique():
-                fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],
-                                         mode='lines+markers', name=mod))
-                fig.update_xaxes(
+    if finished:
+        st.subheader("Simultaion results: ", anchor=None)
+        if finished == 1:
+            with st.expander('Instant utilization'):
+                utl_df = calculations[0][calculations[0]['cat'] == 'utl']
+                fig = go.Figure(layout=go.Layout(width=1200, height=600))
+                for mod in utl_df['mode'].unique():
+                    fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],
+                                             mode='lines', name=mod))
+                    fig.update_xaxes(
+                        title_text="Time",
+                        title_font={"size": 20},
+                        title_standoff=25)
+
+                    fig.update_yaxes(
+                        title_text="Utilization",
+                        title_standoff=25)
+
+                st.write(fig)
+            with st.expander('Average utilization'):
+                uot_df = calculations[0][calculations[0]['cat'] == 'uot']
+                fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
+                st.write(fig1)
+                st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
+                fig1.update_xaxes(
                     title_text="Time",
                     title_font={"size": 20},
                     title_standoff=25)
 
-                fig.update_yaxes(
+                fig1.update_yaxes(
                     title_text="Utilization",
                     title_standoff=25)
+            with st.expander('Customer average waiting time in line'):
+                tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
+                fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
+                fig2.update_xaxes(
+                    title_text="Time",
+                    title_font={"size": 20},
+                    title_standoff=25)
 
-            st.write(fig)
-        with st.expander('Average utilization'):
-            uot_df = calculations[0][calculations[0]['cat'] == 'uot']
-            fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
-            st.write(fig1)
-            st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
-            fig1.update_xaxes(
-                title_text="Time",
-                title_font={"size": 20},
-                title_standoff=25)
+                fig2.update_yaxes(
+                    title_text="Average waiting time in line",
+                    title_standoff=25)
+                for mod in tq_df['mode'].unique():
+                    fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
+                                              mode='lines', name=mod))
+                st.write(fig2)
+                st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
+                                                       ' in line'}).groupby('mode').mean()['Average waiting time in line'])
 
-            fig1.update_yaxes(
-                title_text="Utilization",
-                title_standoff=25)
-        with st.expander('Customer average waiting time in line'):
-            tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
-            fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
-            fig2.update_xaxes(
-                title_text="Time",
-                title_font={"size": 20},
-                title_standoff=25)
+            with st.expander('Average number of customers in line'):
+                iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
+                fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
+                for mod in iq_df['mode'].unique():
+                    fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],
+                                              mode='lines', name=mod))
+                fig3.update_xaxes(
+                    title_text="Time",
+                    title_font={"size": 20},
+                    title_standoff=25)
 
-            fig2.update_yaxes(
-                title_text="Average waiting time in line",
-                title_standoff=25)
-            for mod in tq_df['mode'].unique():
-                fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
-                                          mode='lines+markers', name=mod))
-            st.write(fig2)
-            st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
-                                                   ' in line'}).groupby('mode').mean()['Average waiting time in line'])
-
-        with st.expander('Average number of customers in line'):
-            iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
-            fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
-            for mod in iq_df['mode'].unique():
-                fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],
-                                          mode='lines+markers', name=mod))
-            fig3.update_xaxes(
-                title_text="Time",
-                title_font={"size": 20},
-                title_standoff=25)
-
-            fig3.update_yaxes(
-                title_text="Average number of customers in line",
-                title_standoff=25)
-            st.write(fig3)
-            st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
-                         mean()['Average number of customers in line'])
+                fig3.update_yaxes(
+                    title_text="Average number of customers in line",
+                    title_standoff=25)
+                st.write(fig3)
+                st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
+                             mean()['Average number of customers in line'])
 
 with st.container():
-    av_u_string = 'Average utilization:'
-    av_iq_string = 'Average number of people in the queue:'
-    av_ip_string = 'Average number of people served at a point in time:'
-    av_i_string = 'Average number of people in the process:'
-    u_string = 'u = Ra/Rp = {}/{} = {} compared to the observed value of {}'
-    iq_string = 'Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {} compared to the observed value of {}'
-    ip_string = 'Ip = u*c ={} compared to the observed value of {}'
-    i_string = 'I = Ip + Iq = {} + {} = {} compared to the observed value of {}'
-    st.subheader("Detailed explanation: ", anchor=None)
-    st.write("This section estimates service system performance metrics theoretical "
-             "values (using results from queuering theory and the Little's Law) and compares them with the values"
-             "observed from the simulation results.")
-    if finished == 1:
-        with st.expander('Random Assignment'):
-            st.write(av_u_string)
-            st.code(u_string.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
-            st.write(av_iq_string)
-            st.code(iq_string.format(calculations[1]['LIq_rs'], calculations[1]['Iq_rand']))
-            st.write(av_ip_string)
-            st.code(ip_string.format(calculations[1]['LIp_rs'], calculations[1]['Ip_rand']))
-            st.write(av_i_string)
-            st.code(i_string.format(calculations[1]['LIp_rs'],calculations[1]['LIq_rs'],
-                                    calculations[1]['LI_rs'], calculations[1]['I_rand']))
+    if finished:
+        av_u_string = 'Average utilization:'
+        av_iq_string = 'Average number of people in the queue:'
+        av_ip_string = 'Average number of people served at a point in time:'
+        av_i_string = 'Average number of people in the process:'
+        u_string = 'u = Ra/Rp = {}/{} = {} compared to the observed value of {}'
+        iq_string = 'Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {} compared to the observed value of {}'
+        ip_string = 'Ip = u*c ={} compared to the observed value of {}'
+        i_string = 'I = Ip + Iq = {} + {} = {} compared to the observed value of {}'
+        st.subheader("Detailed explanation: ", anchor=None)
+        st.write("This section estimates service system performance metrics theoretical "
+                 "values (using results from queuering theory and the Little's Law) and compares them with the values"
+                 "observed from the simulation results.")
+        if finished == 1:
+            with st.expander('Random Assignment'):
+                st.write(av_u_string)
+                st.code(u_string.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
+                st.write(av_iq_string)
+                st.code(iq_string.format(calculations[1]['LIq_rs'], calculations[1]['Iq_rand']))
+                st.write(av_ip_string)
+                st.code(ip_string.format(calculations[1]['LIp_rs'], calculations[1]['Ip_rand']))
+                st.write(av_i_string)
+                st.code(i_string.format(calculations[1]['LIp_rs'],calculations[1]['LIq_rs'],
+                                        calculations[1]['LI_rs'], calculations[1]['I_rand']))
 
-        with st.expander('Allocation to the shortest line'):
-            st.write(av_u_string)
-            # st.code(u_string.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_sep']))
-            # st.write(av_iq_string)
-            # st.code(iq_string.format(calculations[1]['LIq_sep'], calculations[1]['Iq_sep']))
-            # st.write(av_ip_string)
-            # st.code(ip_string.format(calculations[1]['LIp_sep'], calculations[1]['Ip_sep']))
-            # st.write(av_i_string)
-            # st.code(i_string.format(calculations[1]['LIp_sep'], calculations[1]['LIq_sep'],
-            #                         calculations[1]['LI_sep'], calculations[1]['I_sep']))
+            with st.expander('Allocation to the shortest line'):
+                st.write(av_u_string)
+                # st.code(u_string.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_sep']))
+                # st.write(av_iq_string)
+                # st.code(iq_string.format(calculations[1]['LIq_sep'], calculations[1]['Iq_sep']))
+                # st.write(av_ip_string)
+                # st.code(ip_string.format(calculations[1]['LIp_sep'], calculations[1]['Ip_sep']))
+                # st.write(av_i_string)
+                # st.code(i_string.format(calculations[1]['LIp_sep'], calculations[1]['LIq_sep'],
+                #                         calculations[1]['LI_sep'], calculations[1]['I_sep']))
 
-        with st.expander('Pooling'):
-            st.write(av_u_string)
-            st.code(u_string.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_pool']))
-            st.write(av_iq_string)
-            st.code(iq_string.format(calculations[1]['LIq_pool'],calculations[1]['Iq_pool']))
-            st.write(av_ip_string)
-            st.code(ip_string.format(calculations[1]['LIp_pool'], calculations[1]['Ip_pool']))
-            st.write(av_i_string)
-            st.code(i_string.format(calculations[1]['LIp_pool'], calculations[1]['LIq_pool'],
-                                    calculations[1]['LI_pool'], calculations[1]['I_pool']))
+            with st.expander('Pooling'):
+                st.write(av_u_string)
+                st.code(u_string.format(tp, a*workers_num, calculations[1]['u'], calculations[1]['utl_pool']))
+                st.write(av_iq_string)
+                st.code(iq_string.format(calculations[1]['LIq_pool'],calculations[1]['Iq_pool']))
+                st.write(av_ip_string)
+                st.code(ip_string.format(calculations[1]['LIp_pool'], calculations[1]['Ip_pool']))
+                st.write(av_i_string)
+                st.code(i_string.format(calculations[1]['LIp_pool'], calculations[1]['LIq_pool'],
+                                        calculations[1]['LI_pool'], calculations[1]['I_pool']))
 
-        with st.expander("Simulation Data"):
-            st.dataframe(calculations[0])
-            #st.download_button('Download file', calculations[0])
+            with st.expander("Simulation Data"):
+                st.dataframe(calculations[0])
+                #st.download_button('Download file', calculations[0])
 
-if finished == 1:
-    with st.container():
-        if st.button("Clear simulation results"):
-            finished = 0
+col11, col12 = st.columns(2)
+with st.container():
+    if finished:
+        with col11:
+            if st.button("Clear simulation results"):
+                finished = 0
+        # with col12:
+        #     if st.button("Clear simulation parameters"):
+        #         param_1_switch = 0
+        #         param_2_switch = 0
+        #         a = 0
+        #         a_std = 0
+        #         tp = 0
+        #         tp_std = 0
+        #         length = 0
+        #         start_switch = 0
+
+
 
 
 
