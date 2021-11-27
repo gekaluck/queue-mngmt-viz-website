@@ -13,8 +13,8 @@ import pandas as pd
 
 # Adist = Arrival Distribution; Pdist = Process Distribution;
 # Ra_sd = Rate of arrival standard deviation; Rp_sd = Rate of processing standard deviation
-@st.cache
-def combined(Ra, Rp, SIM_TIME, NUM_SERVERS, ADist, PDist, Ra_sd, Rp_sd):
+@st.cache(show_spinner=False)
+def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
     # Defing Normal & LogNormal functions for simulation
     def normalGenerat(a):
         a = numpy.random.normal(a[0], a[1], 1)
@@ -26,8 +26,8 @@ def combined(Ra, Rp, SIM_TIME, NUM_SERVERS, ADist, PDist, Ra_sd, Rp_sd):
             return numpy.exp(a[0])
 
     # RANDOM_SEED = random.randint(1, 99)
-    Ra = float(Ra)
-    Rp = float(Rp)
+    ia_t = float(ia_t)
+    Tp = float(Tp)
     SIM_TIME = float(SIM_TIME)
     NUM_SERVERS = int(NUM_SERVERS)
 
@@ -40,55 +40,55 @@ def combined(Ra, Rp, SIM_TIME, NUM_SERVERS, ADist, PDist, Ra_sd, Rp_sd):
     servers_rand = []
     customer = {}
     timeStamp = []
-    Rate = [[Rp, Rp_sd], [Ra, Ra_sd]]
+    Rate = [[Tp, Tp_sd], [ia_t, ia_t_sd]]
     cva = 1
     cvp = 1
 
     # for different arrival and processing distribution , assiging different paramaters
     if ADist == 'logNormal':
-        phiA = numpy.sqrt(Ra ** 2 + Ra_sd ** 2)
-        phiP = numpy.sqrt(Rp ** 2 + Rp_sd ** 2)
-        ARate = [[numpy.log((Rp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Rp ** 2)))],
-                 [numpy.log((Ra ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (Ra ** 2)))]]
+        phiA = numpy.sqrt(ia_t ** 2 + ia_t_sd ** 2)
+        phiP = numpy.sqrt(Tp ** 2 + Tp_sd ** 2)
+        ARate = [[numpy.log((Tp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Tp ** 2)))],
+                 [numpy.log((ia_t ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (ia_t ** 2)))]]
         ADistribution = [logNormalGenerate]
-        cva = Ra_sd
+        cva = ia_t_sd
 
     elif ADist == 'Normal':
         ######
         ARate = Rate
-        cva = Ra_sd
+        cva = ia_t_sd
         ADistribution = [normalGenerat]
 
 
     elif ADist == 'Fixed':
-        ARate = [Rp, Ra]
+        ARate = [Tp, ia_t]
         ADistribution = [float]
         cva = 0
     elif ADist == 'Exponential':
-        ARate = [Rp, Ra]
+        ARate = [Tp, ia_t]
         ADistribution = [numpy.random.exponential]
 
     if PDist == 'logNormal':
-        phiA = numpy.sqrt(Ra ** 2 + Ra_sd ** 2)
-        phiP = numpy.sqrt(Rp ** 2 + Rp_sd ** 2)
-        PRate = [[numpy.log((Rp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Rp ** 2)))],
-                 [numpy.log((Ra ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (Ra ** 2)))]]
+        phiA = numpy.sqrt(ia_t ** 2 + ia_t_sd ** 2)
+        phiP = numpy.sqrt(Tp ** 2 + Tp_sd ** 2)
+        PRate = [[numpy.log((Tp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Tp ** 2)))],
+                 [numpy.log((ia_t ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (ia_t ** 2)))]]
         PDistribution = [logNormalGenerate]
-        cvp = Rp_sd
+        cvp = Tp_sd
 
     elif PDist == 'Normal':
         ######
         PRate = Rate
-        cvp = Rp_sd
+        cvp = Tp_sd
         PDistribution = [normalGenerat]
 
 
     elif PDist == 'Fixed':
-        PRate = [Rp, Ra]
+        PRate = [Tp, ia_t]
         PDistribution = [float]
         cvp = 0
     elif PDist == 'Exponential':
-        PRate = [Rp, Ra]
+        PRate = [Tp, ia_t]
         PDistribution = [numpy.random.exponential]
 
     # Define different server type object (Pool / Seperate / Random)
@@ -195,15 +195,15 @@ def combined(Ra, Rp, SIM_TIME, NUM_SERVERS, ADist, PDist, Ra_sd, Rp_sd):
     # random.seed(RANDOM_SEED)
     # random.seed(123)
     env_pool = simpy.Environment()
-    env_pool.process(setup_pool(env_pool, NUM_SERVERS, Rp, Ra))
+    env_pool.process(setup_pool(env_pool, NUM_SERVERS, Tp, ia_t))
     env_pool.run(until=SIM_TIME)
 
     env_sep = simpy.Environment()
-    env_sep.process(setup_sep(env_sep, NUM_SERVERS, Rp, Ra))
+    env_sep.process(setup_sep(env_sep, NUM_SERVERS, Tp, ia_t))
     env_sep.run(until=SIM_TIME)
 
     env = simpy.Environment()
-    env.process(setup(env, NUM_SERVERS, Rp, Ra))
+    env.process(setup(env, NUM_SERVERS, Tp, ia_t))
     env.run(until=SIM_TIME)
 
     final_keys_pool = []
@@ -669,18 +669,18 @@ def combined(Ra, Rp, SIM_TIME, NUM_SERVERS, ADist, PDist, Ra_sd, Rp_sd):
     utl_sep = df_sep[list(df_sep.keys())[-1]][2]
     utl_pool = df_pool[list(df_pool.keys())[-1]][2]
 
-    u = Rp / (Ra * NUM_SERVERS)
-    Tq = (Ra / NUM_SERVERS) * (((u ** (numpy.sqrt(2 * NUM_SERVERS + 2) - 1)) / (1 - u))) * (
+    u = Tp / (ia_t * NUM_SERVERS)
+    Tq = (ia_t / NUM_SERVERS) * (((u ** (numpy.sqrt(2 * NUM_SERVERS + 2) - 1)) / (1 - u))) * (
                 ((cva ** 2) + (cvp ** 2)) / 2)
 
-    I = (Tq + Rp) * (1 / Ra)
+    I = (Tq + Tp) * (1 / ia_t)
 
-    LIq_pool = (((u ** numpy.sqrt(2 * (NUM_SERVERS + 1))) / (1 - u)) * ((((cva / Ra) ** 2) + ((cvp / Rp) ** 2)) / 2))
+    LIq_pool = (((u ** numpy.sqrt(2 * (NUM_SERVERS + 1))) / (1 - u)) * ((((cva / ia_t) ** 2) + ((cvp / Tp) ** 2)) / 2))
     # Does not take into account whether exponential where the second term = 1 not cva, cvp = 1
 
     #Need modification for logic reasons R= min(Ra, Rp)
-    LIp_pool = (1 / Ra) * Rp
-    LI_pool = (((u ** numpy.sqrt(2 * (NUM_SERVERS + 1))) / (1 - u)) * (((cva ** 2) + (cvp ** 2)) / 2)) + (1 / Ra) * Rp
+    LIp_pool = (1 / ia_t) * Tp
+    LI_pool = (((u ** numpy.sqrt(2 * (NUM_SERVERS + 1))) / (1 - u)) * (((cva ** 2) + (cvp ** 2)) / 2)) + (1 / ia_t) * Tp
     # LIq_pool + LIp_pool ???
 
     LIq_rs = (((u ** numpy.sqrt(2 * (1 + 1))) / (1 - u)) * (((cva ** 2) + (cvp ** 2)) / 2))
@@ -746,7 +746,7 @@ with st.container():
 with st.container():
     with col1:
         st.subheader("Define Simultaion length", anchor=None)
-        length = st.slider('Simulation length', min_value=0, max_value=20000, step=10)
+        length = st.slider('Simulation length', min_value=0, max_value=20000, step=100)
         if length > 0:
             param_1_switch = 1
     with col2:
@@ -788,7 +788,7 @@ with st.container():
 with st.container():
     if start_switch:
         if st.button("Start simulation!"):
-            with st.spinner(text='In progress...'):
+            with st.spinner(text='Simulation is in progress...'):
                 calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
                 #calculations = [pd.read_csv('output_1.csv')]
                 finished = 1
@@ -819,9 +819,7 @@ with st.container():
                 st.write(fig)
             with st.expander('Average utilization'):
                 uot_df = calculations[0][calculations[0]['cat'] == 'uot']
-                fig1 = px.line(uot_df, 'x', 'y', color='mode', width=1200, height=600)
-                st.write(fig1)
-                st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
+                fig1 = go.Figure(layout=go.Layout(width=1200, height=600))
                 fig1.update_xaxes(
                     title_text="Time",
                     title_font={"size": 20},
@@ -830,6 +828,12 @@ with st.container():
                 fig1.update_yaxes(
                     title_text="Utilization",
                     title_standoff=25)
+                for mod in uot_df['mode'].unique():
+                    fig1.add_trace(go.Scatter(x=uot_df[uot_df['mode'] == mod]['x'], y=uot_df[uot_df['mode'] == mod]['y'],
+                                             mode='lines', name=mod))
+                st.write(fig1)
+                st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
+
             with st.expander('Customer average waiting time in line'):
                 tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
                 fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
