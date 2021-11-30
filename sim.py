@@ -9,7 +9,7 @@ import streamlit as st
 
 # Adist = Arrival Distribution; Pdist = Process Distribution;
 # Ra_sd = Rate of arrival standard deviation; Rp_sd = Rate of processing standard deviation
-@st.cache
+
 def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 
     # Defing Normal & LogNormal functions for simulation
@@ -232,7 +232,7 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
         customerNUM = 0
         totalWait = 0
         customerServed = 0
-        for c in customer_pool.keys():
+        for c in customer_pool.keys():  # ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             if customer_pool[c][0] <= t:
                 customerNUM += 1
                 if len(customer_pool[c]) < 2:
@@ -744,8 +744,8 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 # Rp = 5 -> Tp = 1/5
 
 
-result = combined(2.5, 9, 5000, 4, 'Exponential', 'Exponential', 1, 1)
-#result[0].to_csv("output_1.csv")
+result = combined(1, 2, 50, 1, 'Fixed', 'Fixed', 0, 0)
+result[0].to_csv("output_1.csv")
 print(result[1])
 
 

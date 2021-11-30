@@ -10,6 +10,10 @@ import simpy
 import numpy
 import pandas as pd
 
+if 'param_show' not in st.session_state:
+    st.session_state['param_show'] = 'intro'
+if 'simulation' not in st.session_state:
+    st.session_state['simulation'] = 'not_ready'
 
 # Adist = Arrival Distribution; Pdist = Process Distribution;
 # Ra_sd = Rate of arrival standard deviation; Rp_sd = Rate of processing standard deviation
@@ -722,6 +726,7 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 
 
 
+
 DISTRIBUTIONS = ["Normal", "logNormal", "Fixed", "Exponential"]
 
 st.set_page_config(layout="wide")
@@ -734,23 +739,19 @@ st.sidebar.info("Credit info Credit info Credit info Credit info Credit info Cre
                 "Credit info Credit info Credit info Credit info Credit info Credit info Credit info Credit info "
                 "Credit info Credit info Credit info Credit info Credit info Credit info Credit info ")
 
-col1, col2, col3 = st.columns(3)
-finished = 0
-param_1_switch = 0
-param_2_switch = 0
-start_switch = 0
 
-with st.container():
-    with col1:
-        st.header("Define simulation parameters", anchor=None)
-with st.container():
-    with col1:
-        st.subheader("Define Simultaion length", anchor=None)
-        length = st.slider('Simulation length', min_value=0, max_value=20000, step=100)
-        if length > 0:
-            param_1_switch = 1
-    with col2:
-        if param_1_switch:
+
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("Define Simultaion length", anchor=None)
+    length = st.slider('Simulation length', min_value=0, max_value=20000, step=200)
+    if length > 0:
+        st.session_state['param_show'] = 'show_arr'
+
+with col2:
+        if st.session_state['param_show'] == 'show_arr' or st.session_state['param_show'] == 'show_proc':
             st.subheader("Customer arrival parameters", anchor=None)
             q_dist_select = st.selectbox('Interarrival time distribution', DISTRIBUTIONS, key=1)
             a_std = 0
@@ -766,9 +767,10 @@ with st.container():
             elif q_dist_select == 'Exponential':
                 a = st.number_input('Average Interarrival time ', key=16, step=0.1)
             if a > 0:
-                param_2_switch = 1
-    with col3:
-        if param_2_switch:
+                st.session_state['param_show'] = 'show_proc'
+
+with col3:
+        if st.session_state['param_show'] == 'show_proc':
             st.subheader("Define Process parameters", anchor=None)
             workers_num = st.number_input('Number of workers:', key=27, step=1)
             p_dist_select = st.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
@@ -783,95 +785,97 @@ with st.container():
             elif p_dist_select == 'Exponential':
                 tp = st.number_input('Average Processing time ', key=26)
             if tp > 0:
-                start_switch = 1
+                st.session_state['simulation'] = 'ready'
+
 
 with st.container():
-    if start_switch:
-        if st.button("Start simulation!"):
+    if st.session_state['simulation'] == 'ready':
+        start_button = st.button("Start simulation!")
+        if start_button:
+            st.session_state['param_show'] = 'intro'
             with st.spinner(text='Simulation is in progress...'):
                 calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
                 #calculations = [pd.read_csv('output_1.csv')]
-                finished = 1
+                st.session_state['simulation'] = 'finished'
             st.success('Done!')
         else:
-            if finished != 0:
+            if st.session_state['simulation'] == 'finished':
                 st.subheader('Waiting')
 
 with st.container():
-    if finished:
+    if st.session_state['simulation'] == 'finished':
         st.subheader("Simultaion results: ", anchor=None)
-        if finished == 1:
-            with st.expander('Instant utilization'):
-                utl_df = calculations[0][calculations[0]['cat'] == 'utl']
-                fig = go.Figure(layout=go.Layout(width=1200, height=600))
-                for mod in utl_df['mode'].unique():
-                    fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],
-                                             mode='lines', name=mod))
-                    fig.update_xaxes(
-                        title_text="Time",
-                        title_font={"size": 20},
-                        title_standoff=25)
-
-                    fig.update_yaxes(
-                        title_text="Utilization",
-                        title_standoff=25)
-
-                st.write(fig)
-            with st.expander('Average utilization'):
-                uot_df = calculations[0][calculations[0]['cat'] == 'uot']
-                fig1 = go.Figure(layout=go.Layout(width=1200, height=600))
-                fig1.update_xaxes(
+        with st.expander('Instant utilization'):
+            utl_df = calculations[0][calculations[0]['cat'] == 'utl']
+            fig = go.Figure(layout=go.Layout(width=1200, height=600))
+            for mod in utl_df['mode'].unique():
+                fig.add_trace(go.Scatter(x=utl_df[utl_df['mode'] == mod]['x'], y=utl_df[utl_df['mode'] == mod]['y'],
+                                         mode='lines', name=mod))
+                fig.update_xaxes(
                     title_text="Time",
                     title_font={"size": 20},
                     title_standoff=25)
 
-                fig1.update_yaxes(
+                fig.update_yaxes(
                     title_text="Utilization",
                     title_standoff=25)
-                for mod in uot_df['mode'].unique():
-                    fig1.add_trace(go.Scatter(x=uot_df[uot_df['mode'] == mod]['x'], y=uot_df[uot_df['mode'] == mod]['y'],
-                                             mode='lines', name=mod))
-                st.write(fig1)
-                st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
 
-            with st.expander('Customer average waiting time in line'):
-                tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
-                fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
-                fig2.update_xaxes(
-                    title_text="Time",
-                    title_font={"size": 20},
-                    title_standoff=25)
+            st.write(fig)
+        with st.expander('Average utilization'):
+            uot_df = calculations[0][calculations[0]['cat'] == 'uot']
+            fig1 = go.Figure(layout=go.Layout(width=1200, height=600))
+            fig1.update_xaxes(
+                title_text="Time",
+                title_font={"size": 20},
+                title_standoff=25)
 
-                fig2.update_yaxes(
-                    title_text="Average waiting time in line",
-                    title_standoff=25)
-                for mod in tq_df['mode'].unique():
-                    fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
-                                              mode='lines', name=mod))
-                st.write(fig2)
-                st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
-                                                       ' in line'}).groupby('mode').mean()['Average waiting time in line'])
+            fig1.update_yaxes(
+                title_text="Utilization",
+                title_standoff=25)
+            for mod in uot_df['mode'].unique():
+                fig1.add_trace(go.Scatter(x=uot_df[uot_df['mode'] == mod]['x'], y=uot_df[uot_df['mode'] == mod]['y'],
+                                         mode='lines', name=mod))
+            st.write(fig1)
+            st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
 
-            with st.expander('Average number of customers in line'):
-                iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
-                fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
-                for mod in iq_df['mode'].unique():
-                    fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],
-                                              mode='lines', name=mod))
-                fig3.update_xaxes(
-                    title_text="Time",
-                    title_font={"size": 20},
-                    title_standoff=25)
+        with st.expander('Customer average waiting time in line'):
+            tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
+            fig2 = go.Figure(layout=go.Layout(width=1200, height=600))
+            fig2.update_xaxes(
+                title_text="Time",
+                title_font={"size": 20},
+                title_standoff=25)
 
-                fig3.update_yaxes(
-                    title_text="Average number of customers in line",
-                    title_standoff=25)
-                st.write(fig3)
-                st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
-                             mean()['Average number of customers in line'])
+            fig2.update_yaxes(
+                title_text="Average waiting time in line",
+                title_standoff=25)
+            for mod in tq_df['mode'].unique():
+                fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
+                                          mode='lines', name=mod))
+            st.write(fig2)
+            st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
+                                                   ' in line'}).groupby('mode').mean()['Average waiting time in line'])
+
+        with st.expander('Average number of customers in line'):
+            iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
+            fig3 = go.Figure(layout=go.Layout(width=1200, height=600))
+            for mod in iq_df['mode'].unique():
+                fig3.add_trace(go.Scatter(x=iq_df[iq_df['mode'] == mod]['x'], y=iq_df[iq_df['mode'] == mod]['y'],
+                                          mode='lines', name=mod))
+            fig3.update_xaxes(
+                title_text="Time",
+                title_font={"size": 20},
+                title_standoff=25)
+
+            fig3.update_yaxes(
+                title_text="Average number of customers in line",
+                title_standoff=25)
+            st.write(fig3)
+            st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
+                         mean()['Average number of customers in line'])
 
 with st.container():
-    if finished:
+    if st.session_state['simulation'] == 'finished':
         av_u_string = 'Average utilization:'
         av_iq_string = 'Average number of people in the queue:'
         av_ip_string = 'Average number of people served at a point in time:'
@@ -884,7 +888,7 @@ with st.container():
         st.write("This section estimates service system performance metrics theoretical "
                  "values (using results from queuering theory and the Little's Law) and compares them with the values"
                  "observed from the simulation results.")
-        if finished == 1:
+        if st.session_state['simulation'] == 'finished':
             with st.expander('Random Assignment'):
                 st.write(av_u_string)
                 st.code(u_string.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
@@ -924,21 +928,11 @@ with st.container():
 
 col11, col12 = st.columns(2)
 with st.container():
-    if finished:
+    if st.session_state['simulation'] == 'finished':
         with col11:
             if st.button("Clear simulation results"):
-                finished = 0
-
-        # with col12:
-        #     if st.button("Clear simulation parameters"):
-        #         param_1_switch = 0
-        #         param_2_switch = 0
-        #         a = 0
-        #         a_std = 0
-        #         tp = 0
-        #         tp_std = 0
-        #         length = 0
-        #         start_switch = 0
+                st.session_state['simulation'] == 'ready'
+                calculations = {}
 
 
 
