@@ -217,12 +217,13 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 
     # df = {t:[number_in_queue, utilization_instant,utilization_accumulative, I,Tp,Tq]}
     df_pool = {}
+    totalWait = 0 # TEST
     for t in final_keys_pool:
         q = 0
         inService = 0
         accService = 0
         customerNUM = 0
-        totalWait = 0
+
         customerServed = 0
         for c in customer_pool.keys():
             if customer_pool[c][0] <= t:
@@ -268,12 +269,14 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 
     # df = {t:[number_in_queue, utilization_instant,utilization_accumulative]}
     df_sep = {}
+    totalWait = 0
+    # TEST
     for t in final_keys_sep:
         q = 0
         inService = 0
         accService = 0
         customerNUM = 0
-        totalWait = 0
+
         customerServed = 0
         for c in customer_sep.keys():
             if customer_sep[c][0] <= t:
@@ -318,12 +321,13 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             final_keys.append(t)
 
     df_rand = {}
+    totalWait = 0
+    # TEST
     for t in final_keys:
         q = 0
         inService = 0
         accService = 0
         customerNUM = 0
-        totalWait = 0
         customerServed = 0
         for c in customer.keys():
             if customer[c][0] <= t:

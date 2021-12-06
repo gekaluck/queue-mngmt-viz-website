@@ -226,34 +226,50 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
     # df = {t:[number_in_queue, utilization_instant,utilization_accumulative, I,Tp,Tq]}
     df_pool = {}
     for t in final_keys_pool:
-        q = 0
-        inService = 0
-        accService = 0
+        q = 0              # number of people in line?
+        inService = 0      # number of people in the system
+        total_tp = 0     # cumulated processing time
         customerNUM = 0
         totalWait = 0
         customerServed = 0
-        for c in customer_pool.keys():  # ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-            if customer_pool[c][0] <= t:
-                customerNUM += 1
-                if len(customer_pool[c]) < 2:
+        time_diff = 0
+        for c in customer_pool.keys(): # ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+            if customer_pool[c][0] <= t:  # arrival time <= t
+                customerNUM += 1  # accept the customer and add to total number of customers
+                print('t: ', t)
+                print('customer_NUM', customerNUM)
+                print(c)
+                print(customer_pool[c]) # for each arrived customer [arrival time, start processing time, depart processimg]
+                if len(customer_pool[c]) < 2:  # system overload
+                    print('len(customer_pool) < 2')
+                    print('totalwait: ', totalWait)
+                    print('t - customer_pool[c][0]', t - customer_pool[c][0])
                     totalWait += t - customer_pool[c][0]
                     q += 1
-                else:
-                    totalWait += customer_pool[c][1] - customer_pool[c][0]
+                else:  #
+                    print('else')
+                    print('totalwait: ', totalWait)
+                    print('customer_pool[c][1] - customer_pool[c][0]', customer_pool[c][1] - customer_pool[c][0]) # time in line for !!!!!!! if t<=customer_pool[c][1]
                     if customer_pool[c][1] > t:
+                        totalWait += t - customer_pool[c][0]
                         q += 1
+                    else:
+                        totalWait += customer_pool[c][1] - customer_pool[c][0]
+                        # no need to update q
 
                 if len(customer_pool[c]) == 3:
                     if customer_pool[c][2] <= t:
-                        accService += customer_pool[c][2] - customer_pool[c][1]
+                        total_tp += customer_pool[c][2] - customer_pool[c][1]
                         customerServed += 1
-                    if customer_pool[c][2] > t and customer_pool[c][1] <= t:
+                    if customer_pool[c][2] > t and customer_pool[c][1] <= t: # if customer in processing but will not finish processing before t
                         inService += 1
-                        accService += t - customer_pool[c][1]
+                        total_tp += t - customer_pool[c][1]
                         customerServed += 1
                 elif len(customer_pool[c]) == 2:
                     if customer_pool[c][1] <= t:
-                        accService += t - customer_pool[c][1]
+                        total_tp += t - customer_pool[c][1]
                         inService += 1
                         customerServed += 1
                 else:
@@ -264,11 +280,12 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
             df_pool[t].append(inService/NUM_SERVERS)
         else:
               df_pool[t].append(1)
-        df_pool[t].append(accService/(t*NUM_SERVERS))
+        df_pool[t].append(total_tp/(t*NUM_SERVERS))
         df_pool[t].append(q + inService)
-        df_pool[t].append(accService/customerServed)
-        df_pool[t].append(totalWait/customerNUM)
-
+        df_pool[t].append(total_tp/customerServed)
+        df_pool[t].append(totalWait/customerNUM) #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+        print("Average Tq: ", totalWait/customerNUM)
+        print("========================================")
     final_keys_sep = []
     for t in timeStamp_sep:
         if t not in final_keys_sep:
@@ -279,11 +296,11 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
     for t in final_keys_sep:
         q = 0
         inService = 0
-        accService = 0
+        total_tp = 0
         customerNUM = 0
         totalWait = 0
         customerServed = 0
-        for c in customer_sep.keys():
+        for c in customer_sep.keys(): # ISSUE
             if customer_sep[c][0] <= t:
                 customerNUM += 1
                 if len(customer_sep[c]) < 2:
@@ -296,15 +313,15 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 
                 if len(customer_sep[c]) == 3:
                     if customer_sep[c][2] <= t:
-                        accService += customer_sep[c][2] - customer_sep[c][1]
+                        total_tp += customer_sep[c][2] - customer_sep[c][1]
                         customerServed += 1
                     if customer_sep[c][2] > t and customer_sep[c][1] <= t:
                         inService += 1
                         customerServed += 1
-                        accService += t - customer_sep[c][1]
+                        total_tp += t - customer_sep[c][1]
                 elif len(customer_sep[c]) == 2:
                     if customer_sep[c][1] <= t:
-                        accService += t - customer_sep[c][1]
+                        total_tp += t - customer_sep[c][1]
                         inService += 1
                         customerServed += 1
                 else:
@@ -315,11 +332,11 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
             df_sep[t].append(inService/NUM_SERVERS)
         else:
               df_sep[t].append(1)
-        df_sep[t].append(accService/(t*NUM_SERVERS))
+        df_sep[t].append(total_tp/(t*NUM_SERVERS))
         df_sep[t].append(q + inService)
-        df_sep[t].append(accService/customerServed)
+        df_sep[t].append(total_tp/customerServed)
         df_sep[t].append(totalWait/customerNUM)
-
+        # Total wait / num of customers who departed the line
 
     final_keys = []
     for t in timeStamp:
@@ -330,7 +347,7 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
     for t in final_keys:
         q = 0
         inService = 0
-        accService = 0
+        total_tp = 0
         customerNUM = 0
         totalWait = 0
         customerServed = 0
@@ -347,15 +364,15 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 
                 if len(customer[c]) == 3:
                     if customer[c][2] <= t:
-                        accService += customer[c][2] - customer[c][1]
+                        total_tp += customer[c][2] - customer[c][1]
                         customerServed += 1
                     if customer[c][2] > t and customer[c][1] <= t:
                         inService += 1
                         customerServed += 1
-                        accService += t - customer[c][1]
+                        total_tp += t - customer[c][1]
                 elif len(customer[c]) == 2:
                     if customer[c][1] <= t:
-                        accService += t - customer[c][1]
+                        total_tp += t - customer[c][1]
                         inService += 1
                         customerServed += 1
                 else:
@@ -366,9 +383,9 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
             df_rand[t].append(inService/NUM_SERVERS)
         else:
               df_rand[t].append(1)
-        df_rand[t].append(accService/(t*NUM_SERVERS))
+        df_rand[t].append(total_tp/(t*NUM_SERVERS))
         df_rand[t].append(q + inService)
-        df_rand[t].append(accService/customerServed)
+        df_rand[t].append(total_tp/customerServed)
         df_rand[t].append(totalWait/customerNUM)
 
     Iq_x_pool = []
@@ -744,7 +761,7 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 # Rp = 5 -> Tp = 1/5
 
 
-result = combined(1, 2, 50, 1, 'Fixed', 'Fixed', 0, 0)
+result = combined(2, 5, 50, 1, 'Fixed', 'Fixed', 0, 0)
 result[0].to_csv("output_1.csv")
 print(result[1])
 
