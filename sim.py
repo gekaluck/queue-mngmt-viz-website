@@ -234,8 +234,6 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
         customerServed = 0
         time_diff = 0
         for c in customer_pool.keys(): # ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
             if customer_pool[c][0] <= t:  # arrival time <= t
                 customerNUM += 1  # accept the customer and add to total number of customers
                 print('t: ', t)
@@ -761,7 +759,7 @@ def combined(Ra,Rp,SIM_TIME,NUM_SERVERS,ADist,PDist,Ra_sd,Rp_sd):
 # Rp = 5 -> Tp = 1/5
 
 
-result = combined(2, 5, 50, 1, 'Fixed', 'Fixed', 0, 0)
+result = combined(2, 5, 400, 1, 'Fixed', 'Fixed', 0, 0)
 result[0].to_csv("output_1.csv")
 print(result[1])
 
