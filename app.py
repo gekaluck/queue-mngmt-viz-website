@@ -217,51 +217,52 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 
     # df = {t:[number_in_queue, utilization_instant,utilization_accumulative, I,Tp,Tq]}
     df_pool = {}
-    totalWait = 0 # TEST
-    for t in final_keys_pool:
-        q = 0
-        inService = 0
-        accService = 0
-        customerNUM = 0
 
+    for t in final_keys_pool:
+        q = 0  # number of people in line?
+        inService = 0  # number of people in the system
+        total_tp = 0  # cumulated processing time
+        customerNUM = 0
+        totalWait = 0
         customerServed = 0
-        for c in customer_pool.keys():
-            if customer_pool[c][0] <= t:
-                customerNUM += 1
-                if len(customer_pool[c]) < 2:
+        time_diff = 0
+        for c in customer_pool.keys():  # ISSUE !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if customer_pool[c][0] <= t:  # arrival time <= t
+                customerNUM += 1  # accept the customer and add to total number of customers
+                if len(customer_pool[c]) < 2:  # system overload
                     totalWait += t - customer_pool[c][0]
                     q += 1
-                else:
-                    totalWait += customer_pool[c][1] - customer_pool[c][0]
+                else:  #
                     if customer_pool[c][1] > t:
+                        totalWait += t - customer_pool[c][0]
                         q += 1
-
+                    else:
+                        totalWait += customer_pool[c][1] - customer_pool[c][0]
+                        # no need to update q
                 if len(customer_pool[c]) == 3:
                     if customer_pool[c][2] <= t:
-                        accService += customer_pool[c][2] - customer_pool[c][1]
+                        total_tp += customer_pool[c][2] - customer_pool[c][1]
                         customerServed += 1
-                    if customer_pool[c][2] > t and customer_pool[c][1] <= t:
+                    if customer_pool[c][2] > t and customer_pool[c][1] <= t:  # if customer in processing but will not finish processing before t
                         inService += 1
-                        accService += t - customer_pool[c][1]
+                        total_tp += t - customer_pool[c][1]
                         customerServed += 1
                 elif len(customer_pool[c]) == 2:
                     if customer_pool[c][1] <= t:
-                        accService += t - customer_pool[c][1]
+                        total_tp += t - customer_pool[c][1]
                         inService += 1
                         customerServed += 1
                 else:
                     inService = NUM_SERVERS
-
         df_pool[t] = [q]
         if inService / NUM_SERVERS <= 1:
             df_pool[t].append(inService / NUM_SERVERS)
         else:
             df_pool[t].append(1)
-        df_pool[t].append(accService / (t * NUM_SERVERS))
+        df_pool[t].append(total_tp / (t * NUM_SERVERS))
         df_pool[t].append(q + inService)
-        df_pool[t].append(accService / customerServed)
+        df_pool[t].append(total_tp / customerServed)
         df_pool[t].append(totalWait / customerNUM)
-
     final_keys_sep = []
     for t in timeStamp_sep:
         if t not in final_keys_sep:
@@ -269,14 +270,13 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 
     # df = {t:[number_in_queue, utilization_instant,utilization_accumulative]}
     df_sep = {}
-    totalWait = 0
-    # TEST
+
     for t in final_keys_sep:
         q = 0
         inService = 0
-        accService = 0
+        total_tp = 0
         customerNUM = 0
-
+        totalWait = 0
         customerServed = 0
         for c in customer_sep.keys():
             if customer_sep[c][0] <= t:
@@ -285,21 +285,23 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
                     totalWait += t - customer_sep[c][0]
                     q += 1
                 else:
-                    totalWait += customer_sep[c][1] - customer_sep[c][0]
                     if customer_sep[c][1] > t:
+                        totalWait += t - customer_sep[c][0]
                         q += 1
+                    else:
+                        totalWait += customer_sep[c][1] - customer_sep[c][0]
 
                 if len(customer_sep[c]) == 3:
                     if customer_sep[c][2] <= t:
-                        accService += customer_sep[c][2] - customer_sep[c][1]
+                        total_tp += customer_sep[c][2] - customer_sep[c][1]
                         customerServed += 1
                     if customer_sep[c][2] > t and customer_sep[c][1] <= t:
                         inService += 1
                         customerServed += 1
-                        accService += t - customer_sep[c][1]
+                        total_tp += t - customer_sep[c][1]
                 elif len(customer_sep[c]) == 2:
                     if customer_sep[c][1] <= t:
-                        accService += t - customer_sep[c][1]
+                        total_tp += t - customer_sep[c][1]
                         inService += 1
                         customerServed += 1
                 else:
@@ -310,9 +312,9 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             df_sep[t].append(inService / NUM_SERVERS)
         else:
             df_sep[t].append(1)
-        df_sep[t].append(accService / (t * NUM_SERVERS))
+        df_sep[t].append(total_tp / (t * NUM_SERVERS))
         df_sep[t].append(q + inService)
-        df_sep[t].append(accService / customerServed)
+        df_sep[t].append(total_tp / customerServed)
         df_sep[t].append(totalWait / customerNUM)
 
     final_keys = []
@@ -321,12 +323,12 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             final_keys.append(t)
 
     df_rand = {}
-    totalWait = 0
-    # TEST
+
     for t in final_keys:
         q = 0
         inService = 0
-        accService = 0
+        total_tp = 0
+        totalWait = 0
         customerNUM = 0
         customerServed = 0
         for c in customer.keys():
@@ -336,21 +338,23 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
                     q += 1
                     totalWait += t - customer[c][0]
                 else:
-                    totalWait += customer[c][1] - customer[c][0]
                     if customer[c][1] > t:
+                        totalWait += t - customer[c][0]
                         q += 1
+                    else:
+                        totalWait += customer[c][1] - customer[c][0]
 
                 if len(customer[c]) == 3:
                     if customer[c][2] <= t:
-                        accService += customer[c][2] - customer[c][1]
+                        total_tp += customer[c][2] - customer[c][1]
                         customerServed += 1
                     if customer[c][2] > t and customer[c][1] <= t:
                         inService += 1
                         customerServed += 1
-                        accService += t - customer[c][1]
+                        total_tp += t - customer[c][1]
                 elif len(customer[c]) == 2:
                     if customer[c][1] <= t:
-                        accService += t - customer[c][1]
+                        total_tp += t - customer[c][1]
                         inService += 1
                         customerServed += 1
                 else:
@@ -361,9 +365,9 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             df_rand[t].append(inService / NUM_SERVERS)
         else:
             df_rand[t].append(1)
-        df_rand[t].append(accService / (t * NUM_SERVERS))
+        df_rand[t].append(total_tp / (t * NUM_SERVERS))
         df_rand[t].append(q + inService)
-        df_rand[t].append(accService / customerServed)
+        df_rand[t].append(total_tp / customerServed)
         df_rand[t].append(totalWait / customerNUM)
 
     Iq_x_pool = []
@@ -840,7 +844,7 @@ with st.container():
                 fig1.add_trace(go.Scatter(x=uot_df[uot_df['mode'] == mod]['x'], y=uot_df[uot_df['mode'] == mod]['y'],
                                          mode='lines', name=mod))
             st.write(fig1)
-            st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').mean()['Average utilization'])
+            st.dataframe(uot_df.rename(columns={'y':'Average utilization'}).groupby('mode').last()['Average utilization'])
 
         with st.expander('Customer average waiting time in line'):
             tq_df = calculations[0][calculations[0]['cat'] == 'Tq']
@@ -856,9 +860,11 @@ with st.container():
             for mod in tq_df['mode'].unique():
                 fig2.add_trace(go.Scatter(x=tq_df[tq_df['mode'] == mod]['x'], y=tq_df[tq_df['mode'] == mod]['y'],
                                           mode='lines', name=mod))
+
+
             st.write(fig2)
             st.dataframe(tq_df.rename(columns={'y':'Average waiting time'
-                                                   ' in line'}).groupby('mode').mean()['Average waiting time in line'])
+                                                   ' in line'}).groupby('mode').last()['Average waiting time in line'])
 
         with st.expander('Average number of customers in line'):
             iq_df = calculations[0][calculations[0]['cat'] == 'Iq']
@@ -876,7 +882,7 @@ with st.container():
                 title_standoff=25)
             st.write(fig3)
             st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
-                         mean()['Average number of customers in line'])
+                         last()['Average number of customers in line'])
 
 with st.container():
     if st.session_state['simulation'] == 'finished':
