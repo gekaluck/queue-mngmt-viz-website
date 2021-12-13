@@ -738,77 +738,78 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 DISTRIBUTIONS = ["Normal", "logNormal", "Fixed", "Exponential"]
 
 st.set_page_config(layout="wide")
-st.sidebar.title("About")
-st.sidebar.info("About info About info About info About info About info About info About info About info About info "
-                "About info About info About info About info About info About info About info About info "
-                "About info About info About info About info About info About info About info About info ")
-st.sidebar.title("Credit")
-st.sidebar.info("Credit info Credit info Credit info Credit info Credit info Credit info Credit info Credit info "
-                "Credit info Credit info Credit info Credit info Credit info Credit info Credit info Credit info "
-                "Credit info Credit info Credit info Credit info Credit info Credit info Credit info ")
+# st.sidebar.title("About")
+# st.sidebar.info("About info About info About info About info About info About info About info About info About info "
+#                 "About info About info About info About info About info About info About info About info "
+#                 "About info About info About info About info About info About info About info About info ")
+# st.sidebar.title("Credit")
+# st.sidebar.info("Credit info Credit info Credit info Credit info Credit info Credit info Credit info Credit info "
+#                 "Credit info Credit info Credit info Credit info Credit info Credit info Credit info Credit info "
+#                 "Credit info Credit info Credit info Credit info Credit info Credit info Credit info ")
 
 
 
 
-col1, col2, col3 = st.columns(3)
+st.sidebar.subheader("Define Simultaion length", anchor=None)
+length = st.sidebar.slider('Simulation length', min_value=0, max_value=20000, step=200)
+if length > 0:
+    st.session_state['param_show'] = 'show_arr'
 
-with col1:
-    st.subheader("Define Simultaion length", anchor=None)
-    length = st.slider('Simulation length', min_value=0, max_value=20000, step=200)
-    if length > 0:
-        st.session_state['param_show'] = 'show_arr'
+if st.session_state['param_show'] == 'show_arr' or st.session_state['param_show'] == 'show_proc':
+    st.sidebar.subheader("Customer arrival parameters", anchor=None)
+    q_dist_select = st.sidebar.selectbox('Interarrival time distribution', DISTRIBUTIONS, key=1)
+    a = 0
+    a_std = 0
+    tp_std = 0
+    if q_dist_select == 'Normal':
+        a = st.sidebar.number_input('Average Interarrival time: ', key=11, step=0.1)
+        a_std = st.sidebar.number_input('Standard Deviation: ', key=12, step=0.01)
+    elif q_dist_select == 'logNormal':
+        a = st.sidebar.number_input('Mean: ', key=13, step=0.1)
+        a_std = st.sidebar.number_input('Standard Deviation: ', key=14, step=0.01)
+    elif q_dist_select == 'Fixed':
+        a = st.sidebar.number_input('Average Interarrival time', key=15, step=0.1)
+    elif q_dist_select == 'Exponential':
+        a = st.sidebar.number_input('Average Interarrival time ', key=16, step=0.1)
+    if a > 0:
+        st.session_state['param_show'] = 'show_proc'
 
-with col2:
-        if st.session_state['param_show'] == 'show_arr' or st.session_state['param_show'] == 'show_proc':
-            st.subheader("Customer arrival parameters", anchor=None)
-            q_dist_select = st.selectbox('Interarrival time distribution', DISTRIBUTIONS, key=1)
-            a_std = 0
-            tp_std = 0
-            if q_dist_select == 'Normal':
-                a = st.number_input('Average Interarrival time: ', key=11, step=0.1)
-                a_std = st.number_input('Standard Deviation: ', key=12, step=0.01)
-            elif q_dist_select == 'logNormal':
-                a = st.number_input('Mean: ', key=13, step=0.1)
-                a_std = st.number_input('Standard Deviation: ', key=14, step=0.01)
-            elif q_dist_select == 'Fixed':
-                a = st.number_input('Average Interarrival time', key=15, step=0.1)
-            elif q_dist_select == 'Exponential':
-                a = st.number_input('Average Interarrival time ', key=16, step=0.1)
-            if a > 0:
-                st.session_state['param_show'] = 'show_proc'
+if st.session_state['param_show'] == 'show_proc':
+    st.sidebar.subheader("Define Process parameters", anchor=None)
+    workers_num = st.sidebar.number_input('Number of workers:', key=27, step=1)
+    p_dist_select = st.sidebar.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
+    tp = 0
+    if p_dist_select == 'Normal':
+        tp = st.sidebar.number_input('Average Processing time: ', key=21)
+        tp_std = st.sidebar.number_input('Standard Deviation: ', key=22)
+    elif p_dist_select == 'logNormal':
+        tp = st.sidebar.number_input('Mean: ', key=23)
+        tp_std = st.sidebar.number_input('Standard Deviation: ', key=24)
+    elif p_dist_select == 'Fixed':
+        tp = st.sidebar.number_input('Average Processing time', key=25)
+    elif p_dist_select == 'Exponential':
+        tp = st.sidebar.number_input('Average Processing time ', key=26)
+    if tp > 0:
+        st.session_state['simulation'] = 'ready'
 
-with col3:
-        if st.session_state['param_show'] == 'show_proc':
-            st.subheader("Define Process parameters", anchor=None)
-            workers_num = st.number_input('Number of workers:', key=27, step=1)
-            p_dist_select = st.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
-            if p_dist_select == 'Normal':
-                tp = st.number_input('Average Processing time: ', key=21)
-                tp_std = st.number_input('Standard Deviation: ', key=22)
-            elif p_dist_select == 'logNormal':
-                tp = st.number_input('Mean: ', key=23)
-                tp_std = st.number_input('Standard Deviation: ', key=24)
-            elif p_dist_select == 'Fixed':
-                tp = st.number_input('Average Processing time', key=25)
-            elif p_dist_select == 'Exponential':
-                tp = st.number_input('Average Processing time ', key=26)
-            if tp > 0:
-                st.session_state['simulation'] = 'ready'
-
-
-with st.container():
-    if st.session_state['simulation'] == 'ready':
-        start_button = st.button("Start simulation!")
-        if start_button:
-            st.session_state['param_show'] = 'intro'
-            with st.spinner(text='Simulation is in progress...'):
-                calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
-                #calculations = [pd.read_csv('output_1.csv')]
-                st.session_state['simulation'] = 'finished'
-            st.success('Done!')
-        else:
-            if st.session_state['simulation'] == 'finished':
-                st.subheader('Waiting')
+if st.session_state['simulation'] == 'ready':
+    if workers_num/tp < 1/a:
+        unstable_error = st.error("The following parameters will create an unstable system!")
+    start_button = st.sidebar.button("Start simulation!")
+    if start_button:
+        unstable_error = st.empty
+        st.session_state['simulation'] = 'started'
+        st.session_state['param_show'] = 'intro'
+        if workers_num / tp < 1 / a:
+            unstable_flag = True
+        with st.spinner(text='Simulation is in progress...'):
+            calculations = combined(a, tp, length, workers_num, q_dist_select, p_dist_select, a_std, tp_std)
+            #calculations = [pd.read_csv('output_1.csv')]
+        st.session_state['simulation'] = 'finished'
+        st.success('Done!')
+    else:
+        if st.session_state['simulation'] == 'finished':
+            st.subheader('Waiting')
 
 with st.container():
     if st.session_state['simulation'] == 'finished':
@@ -883,9 +884,8 @@ with st.container():
             st.write(fig3)
             st.dataframe(tq_df.rename(columns={'y':'Average number of customers in line'}).groupby('mode').
                          last()['Average number of customers in line'])
-
-with st.container():
-    if st.session_state['simulation'] == 'finished':
+if st.session_state['simulation'] == 'finished':
+    with st.container():
         av_u_string = 'Average utilization:'
         av_iq_string = 'Average number of people in the queue:'
         av_ip_string = 'Average number of people served at a point in time:'
@@ -894,11 +894,13 @@ with st.container():
         iq_string = 'Iq = u^sqrt(2*(1+1)) / (1-u)] * [(CVa^2 + CVp^2) / 2] = {} compared to the observed value of {}'
         ip_string = 'Ip = u*c ={} compared to the observed value of {}'
         i_string = 'I = Ip + Iq = {} + {} = {} compared to the observed value of {}'
-        st.subheader("Detailed explanation: ", anchor=None)
-        st.write("This section estimates service system performance metrics theoretical "
-                 "values (using results from queuering theory and the Little's Law) and compares them with the values"
-                 "observed from the simulation results.")
-        if st.session_state['simulation'] == 'finished':
+
+    with st.container():
+        st.subheader("Estimation of resulting values according to Little's Law: ", anchor=None)
+        if not unstable_flag:
+            st.write("This section estimates service system performance metrics theoretical "
+                     "values (using results from queuering theory and the Little's Law) and compares them with the values"
+                     "observed from the simulation results.")
             with st.expander('Random Assignment'):
                 st.write(av_u_string)
                 st.code(u_string.format(1/tp, 1/a*workers_num, calculations[1]['u'], calculations[1]['utl_rand']))
@@ -935,6 +937,9 @@ with st.container():
             with st.expander("Simulation Data"):
                 st.dataframe(calculations[0])
                 #st.download_button('Download file', calculations[0])
+        else:
+            st.write("Estimates are not available since the system is unstable.\n"
+                    "Stability of the system is a requirement for Little's Law equasion to be valid.")
 
 col11, col12 = st.columns(2)
 with st.container():
@@ -943,6 +948,17 @@ with st.container():
             if st.button("Clear simulation results"):
                 st.session_state['simulation'] == 'ready'
                 calculations = {}
+
+# if st.session_state['simulation'] in ['finished', 'ready']:
+#     clear_param_button = st.sidebar.button("Clear simulation parameters")
+#     if clear_param_button:
+#         st.session_state['param_show'] = 'intro'
+#         length = 0
+#         a = 0
+#         a_std = 0
+#         tp = 0
+#         tp_std = 0
+#         workers_num = 0
 
 
 
