@@ -751,6 +751,9 @@ st.set_page_config(layout="wide")
 
 
 st.sidebar.subheader("Define Simultaion length", anchor=None)
+unstable_flag = False
+workers_num = 0
+tp = 0
 length = st.sidebar.slider('Simulation length', min_value=0, max_value=20000, step=200)
 if length > 0:
     st.session_state['param_show'] = 'show_arr'
@@ -778,7 +781,6 @@ if st.session_state['param_show'] == 'show_proc':
     st.sidebar.subheader("Define Process parameters", anchor=None)
     workers_num = st.sidebar.number_input('Number of workers:', key=27, step=1)
     p_dist_select = st.sidebar.selectbox('Processing time distribution', DISTRIBUTIONS, key=2)
-    tp = 0
     if p_dist_select == 'Normal':
         tp = st.sidebar.number_input('Average Processing time: ', key=21)
         tp_std = st.sidebar.number_input('Standard Deviation: ', key=22)
@@ -793,8 +795,11 @@ if st.session_state['param_show'] == 'show_proc':
         st.session_state['simulation'] = 'ready'
 
 if st.session_state['simulation'] == 'ready':
-    if workers_num/tp < 1/a:
-        unstable_error = st.error("The following parameters will create an unstable system!")
+    try:
+        if workers_num/tp < 1/a:
+            unstable_error = st.error("The following parameters will create an unstable system!")
+    except ZeroDivisionError:
+        pass
     start_button = st.sidebar.button("Start simulation!")
     if start_button:
         unstable_error = st.empty
@@ -946,7 +951,7 @@ with st.container():
     if st.session_state['simulation'] == 'finished':
         with col11:
             if st.button("Clear simulation results"):
-                st.session_state['simulation'] == 'ready'
+                #st.session_state['simulation'] == 'ready'
                 calculations = {}
 
 # if st.session_state['simulation'] in ['finished', 'ready']:
