@@ -20,14 +20,14 @@ if 'simulation' not in st.session_state:
 @st.cache(show_spinner=False)
 def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
     # Defing Normal & LogNormal functions for simulation
-    def normalGenerat(a):
-        a = numpy.random.normal(a[0], a[1], 1)
-        return numpy.absolute(a[0])
+    def normalGenerat(a, size):                               # GENERATORS
+        a = numpy.random.normal(a[0], a[1], size)
+        return numpy.absolute(a)
 
-    def logNormalGenerate(a):
-        a = numpy.random.normal(a[0], a[1], 1)
+    def logNormalGenerate(a, size):                           # GENERATORS
+        a = numpy.random.normal(a[0], a[1], size)
         if not a[0] == 0:
-            return numpy.exp(a[0])
+            return numpy.exp(a)
 
     # RANDOM_SEED = random.randint(1, 99)
     ia_t = float(ia_t)
@@ -44,56 +44,62 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
     servers_rand = []
     customer = {}
     timeStamp = []
-    Rate = [[Tp, Tp_sd], [ia_t, ia_t_sd]]
+    time_params = [[Tp, Tp_sd], [ia_t, ia_t_sd]]
     cva = 1
     cvp = 1
-
+    dist_size = int(3*SIM_TIME/ia_t)
     # for different arrival and processing distribution , assiging different paramaters
     if ADist == 'logNormal':
         phiA = numpy.sqrt(ia_t ** 2 + ia_t_sd ** 2)
         phiP = numpy.sqrt(Tp ** 2 + Tp_sd ** 2)
-        ARate = [[numpy.log((Tp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Tp ** 2)))],
-                 [numpy.log((ia_t ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (ia_t ** 2)))]]
-        ADistribution = [logNormalGenerate]
+        ia_params = [[numpy.log((Tp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Tp ** 2)))], ### ?????????????? [should be [Tp, Tp_sd], [ia_t, ia_t_sd]]
+                 [numpy.log((ia_t ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (ia_t ** 2)))]] # ??????????????
+        ADistribution = [logNormalGenerate] # GENERATOR IN LIST
         cva = ia_t_sd
 
     elif ADist == 'Normal':
         ######
-        ARate = Rate
-        cva = ia_t_sd
-        ADistribution = [normalGenerat]
+        ia_params = time_params[1]
+        cva = ia_params[1]/ia_params[0]
+        ADistribution = normalGenerat(ia_params, size=dist_size)
+        # ADistribution = [normalGenerat] # GENERATOR IN LIST
 
 
     elif ADist == 'Fixed':
-        ARate = [Tp, ia_t]
-        ADistribution = [float]
-        cva = 0
+        ia_params = time_params[1][0]
+        cva=0
+        ADistribution = [ia_params for x in range(dist_size)]
+
     elif ADist == 'Exponential':
-        ARate = [Tp, ia_t]
-        ADistribution = [numpy.random.exponential]
+        ia_params = time_params[1][0] # Here we need only a without deviation
+        cva = 1
+        ADistribution = numpy.random.exponential(ia_params, size=dist_size) # GENERATOR IN LIST
+
 
     if PDist == 'logNormal':
         phiA = numpy.sqrt(ia_t ** 2 + ia_t_sd ** 2)
         phiP = numpy.sqrt(Tp ** 2 + Tp_sd ** 2)
-        PRate = [[numpy.log((Tp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Tp ** 2)))],
+        tp_params = [[numpy.log((Tp ** 2) / phiP), numpy.sqrt(numpy.log((phiP ** 2) / (Tp ** 2)))],
                  [numpy.log((ia_t ** 2) / phiA), numpy.sqrt(numpy.log((phiA ** 2) / (ia_t ** 2)))]]
-        PDistribution = [logNormalGenerate]
+        PDistribution = [logNormalGenerate] # GENERATOR IN LIST
         cvp = Tp_sd
 
     elif PDist == 'Normal':
         ######
-        PRate = Rate
-        cvp = Tp_sd
-        PDistribution = [normalGenerat]
+        tp_params = time_params[0]
+        cvp = tp_params[0]/tp_params[1]
+        PDistribution = normalGenerat(tp_params, size=dist_size) # GENERATOR IN LIST
 
 
     elif PDist == 'Fixed':
-        PRate = [Tp, ia_t]
-        PDistribution = [float]
+        tp_params = time_params[0][0] # Here we need only Tp without deviation
+        PDistribution = [tp_params for x in range(dist_size)]
         cvp = 0
+
     elif PDist == 'Exponential':
-        PRate = [Tp, ia_t]
-        PDistribution = [numpy.random.exponential]
+        tp_params = time_params[0][0]
+        PDistribution = numpy.random.exponential(tp_params, size=dist_size) # GENERATOR IN LIST
+
 
     # Define different server type object (Pool / Seperate / Random)
     class Server_pool(object):
@@ -102,8 +108,8 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             self.machine = simpy.Resource(env, num_servers)
             self.processtime = processtime
 
-        def serve(self, customer):
-            yield self.env.timeout(PDistribution[0](PRate[0]))
+        def serve(self, customer, rand_num_i): # introduce parameter of index of list with generated random values
+            yield self.env.timeout(PDistribution[rand_num_i])# Refer to the list with generated random values for Tp
 
     class Server_sep(object):
         def __init__(self, env, num_servers, processtime, serverList):
@@ -113,8 +119,8 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             self.serverList = servers
             self.processtime = processtime
 
-        def serve(self, customer):
-            yield self.env.timeout(PDistribution[0](PRate[0]))
+        def serve(self, customer, rand_num_i): # introduce parameter of index of list with generated random values
+            yield self.env.timeout(PDistribution[rand_num_i])# Refer to the list with generated random values for Tp
 
     class Server(object):
         def __init__(self, env, num_servers, processtime, serverList_rand):
@@ -124,14 +130,14 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             self.serverList_rand = servers_rand
             self.processtime = processtime
 
-        def serve(self, customer):
-            yield self.env.timeout(PDistribution[0](PRate[0]))
+        def serve(self, customer, rand_num_i): # introduce parameter of index of list with generated random values
+            yield self.env.timeout(PDistribution[rand_num_i])# Refer to the list with generated random values for Tp
 
     def NoInSystem(R):
         return (len(R.queue) + R.count)
 
     # Define simulation functions, and record every time a customer enters, get service and leave the queue
-    def sim_pool(env, name, s):
+    def sim_pool(env, name, s, rand_num_i):
         # customer[name] = [arrival, start, end]
         customer_pool[name] = [env.now]
         timeStamp_pool.append(env.now)
@@ -139,11 +145,11 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             yield request
             customer_pool[name].append(env.now)
             timeStamp_pool.append(env.now)
-            yield env.process(s.serve(name))
+            yield env.process(s.serve(name, rand_num_i))
             customer_pool[name].append(env.now)
             timeStamp_pool.append(env.now)
 
-    def sim_sep(env, name, s):
+    def sim_sep(env, name, s, rand_num_i):
         # arrival[name] = [arrival, start, end]
         customer_sep[name] = [env.now]
         timeStamp_sep.append(env.now)
@@ -155,11 +161,11 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             yield request
             customer_sep[name].append(env.now)
             timeStamp_sep.append(env.now)
-            yield env.process(s.serve(name))
+            yield env.process(s.serve(name, rand_num_i))
             customer_sep[name].append(env.now)
             timeStamp_sep.append(env.now)
 
-    def sim(env, name, s):
+    def sim(env, name, s, rand_num_i):
         # arrival[name] = [arrival, start, end]
         customer[name] = [env.now]
         timeStamp.append(env.now)
@@ -168,47 +174,59 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             yield request
             customer[name].append(env.now)
             timeStamp.append(env.now)
-            yield env.process(s.serve(name))
+            yield env.process(s.serve(name, rand_num_i))
             customer[name].append(env.now)
             timeStamp.append(env.now)
 
     def setup_pool(env, num_machines, processtime, arrivalrate):
         server = Server_pool(env, num_machines, processtime)
         index = 1
+        rand_num_i = 0
         while True:
-            yield env.timeout(ADistribution[0](ARate[1]))
-            env.process(sim_pool(env_pool, index, server))
+            #print('Pool a: ', ADistribution[rand_num_i])
+            print("pool Tp:", PDistribution[rand_num_i])
+            yield env.timeout(ADistribution[rand_num_i]) # GENERATOR CALL
+            env.process(sim_pool(env_pool, index, server, rand_num_i))
             index += 1
+            rand_num_i += 1
 
     def setup_sep(env, num_machines, processtime, arrivalrate):
         server = Server_sep(env, num_machines, processtime, servers)
         index = 1
+        rand_num_i = 0
         while True:
-            yield env.timeout(ADistribution[0](ARate[1]))
-            env.process(sim_sep(env_sep, index, server))
+           # print("Sep a: ", ADistribution[rand_num_i])
+            print("Sep Tp:", PDistribution[rand_num_i])
+            yield env.timeout(ADistribution[rand_num_i]) # GENERATOR CALL
+            env.process(sim_sep(env_sep, index, server, rand_num_i))
             index += 1
+            rand_num_i += 1
 
     def setup(env, num_machines, processtime, arrivalrate):
         server = Server(env, num_machines, processtime, servers_rand)
         index = 1
+        rand_num_i = 0
         while True:
-            yield env.timeout(ADistribution[0](ARate[1]))
-            env.process(sim(env, index, server))
+            #print("Rand a: ", ADistribution[rand_num_i])
+            print("Rand Tp:", PDistribution[rand_num_i])
+            yield env.timeout(ADistribution[rand_num_i]) # GENERATOR CALL
+            env.process(sim(env, index, server, rand_num_i))
             index += 1
+            rand_num_i += 1
 
     # random.seed(RANDOM_SEED)
     # random.seed(123)
     env_pool = simpy.Environment()
     env_pool.process(setup_pool(env_pool, NUM_SERVERS, Tp, ia_t))
-    env_pool.run(until=SIM_TIME)
+    env_pool.run(until=SIM_TIME) # LIMITAION ON SIMULATION TIME
 
     env_sep = simpy.Environment()
     env_sep.process(setup_sep(env_sep, NUM_SERVERS, Tp, ia_t))
-    env_sep.run(until=SIM_TIME)
+    env_sep.run(until=SIM_TIME) # LIMITAION ON SIMULATION TIME
 
     env = simpy.Environment()
     env.process(setup(env, NUM_SERVERS, Tp, ia_t))
-    env.run(until=SIM_TIME)
+    env.run(until=SIM_TIME) # LIMITAION ON SIMULATION TIME
 
     final_keys_pool = []
     for t in timeStamp_pool:
@@ -262,6 +280,10 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
         df_pool[t].append(total_tp / (t * NUM_SERVERS))
         df_pool[t].append(q + inService)
         df_pool[t].append(total_tp / customerServed)
+        # print("T: ", t)
+        # print("Pool total wait:", totalWait)
+        # print("Pool cust Number", customerNUM)
+        # print("Pool uot", totalWait / customerNUM)
         df_pool[t].append(totalWait / customerNUM)
     final_keys_sep = []
     for t in timeStamp_sep:
@@ -315,6 +337,10 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
         df_sep[t].append(total_tp / (t * NUM_SERVERS))
         df_sep[t].append(q + inService)
         df_sep[t].append(total_tp / customerServed)
+        # print("T: ", t)
+        # print("Sep total wait:", totalWait)
+        # print("Sep cust Number", customerNUM)
+        # print("Sep uot", totalWait / customerNUM)
         df_sep[t].append(totalWait / customerNUM)
 
     final_keys = []
@@ -367,6 +393,10 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
             df_rand[t].append(1)
         df_rand[t].append(total_tp / (t * NUM_SERVERS))
         df_rand[t].append(q + inService)
+        # print("T: ", t)
+        # print("Rand total wait:", totalWait)
+        # print("Rand cust Number", customerNUM)
+        # print("Rand uot", totalWait / customerNUM)
         df_rand[t].append(total_tp / customerServed)
         df_rand[t].append(totalWait / customerNUM)
 

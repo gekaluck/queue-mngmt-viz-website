@@ -61,3 +61,6 @@ for i in range(30): # Just for demonstration of environment time flow
     if i % 3 == 0:
         print(ADistribution[index])
         index += 1
+
+ADistribution = [5 for x in range(100)]
+print(ADistribution)

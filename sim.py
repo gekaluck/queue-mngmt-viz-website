@@ -39,7 +39,7 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
     time_params = [[Tp, Tp_sd], [ia_t, ia_t_sd]]
     cva = 1
     cvp = 1
-
+    dist_size = int(3*SIM_TIME/ia_t)
     # for different arrival and processing distribution , assiging different paramaters
     if ADist == 'logNormal':
         phiA = numpy.sqrt(ia_t ** 2 + ia_t_sd ** 2)
@@ -53,19 +53,19 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
         ######
         ia_params = time_params[1]
         cva = ia_params[1]/ia_params[0]
-        ADistribution = normalGenerat(ia_params, size=int(3*SIM_TIME/ia_t))
+        ADistribution = normalGenerat(ia_params, size=dist_size)
         # ADistribution = [normalGenerat] # GENERATOR IN LIST
 
 
     elif ADist == 'Fixed':
-        ia_params = [time_params[1][0], 0]
+        ia_params = time_params[1][0] # Here we need only a without deviation
         cva=0
-        ADistribution = [float]
+        ADistribution = [ia_params for x in range(dist_size)]
 
     elif ADist == 'Exponential':
         ia_params = time_params[1][0] # Here we need only a without deviation
         cva = 1
-        ADistribution = numpy.random.exponential(ia_params, size=int(3*SIM_TIME/ia_t)) # GENERATOR IN LIST
+        ADistribution = numpy.random.exponential(ia_params, size=dist_size) # GENERATOR IN LIST
 
 
     if PDist == 'logNormal':
@@ -80,17 +80,17 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
         ######
         tp_params = time_params[0]
         cvp = tp_params[0]/tp_params[1]
-        PDistribution = normalGenerat(tp_params, size=int(3*SIM_TIME/ia_t)) # GENERATOR IN LIST
+        PDistribution = normalGenerat(tp_params, size=dist_size) # GENERATOR IN LIST
 
 
     elif PDist == 'Fixed':
         tp_params = time_params[0][0] # Here we need only Tp without deviation
-        PDistribution = [float]
+        PDistribution = [tp_params for x in range(dist_size)]
         cvp = 0
 
     elif PDist == 'Exponential':
-        tp_params = time_params[0][0]
-        PDistribution = numpy.random.exponential(tp_params, size=3*SIM_TIME/ia_t) # GENERATOR IN LIST
+        tp_params = time_params[0][0] # Here we need only Tp without deviation
+        PDistribution = numpy.random.exponential(tp_params, size=dist_size) # GENERATOR IN LIST
 
 
     # Define different server type object (Pool / Seperate / Random)
@@ -774,7 +774,7 @@ def combined(ia_t, Tp, SIM_TIME, NUM_SERVERS, ADist, PDist, ia_t_sd, Tp_sd):
 # Rp = 5 -> Tp = 1/5
 
 
-result = combined(5, 3, 100, 1, 'Normal', 'Normal', 1, 1)
+result = combined(5, 3, 100, 1, 'Exponential', 'Exponential', 1, 1)
 dfr = result[0]
 uot_d = dfr.loc[dfr['cat'] == 'uot']
 uot_d.loc[uot_d['mode'] =='Customer Pooling'].to_csv("output_uot_1.csv")
