@@ -1,4 +1,4 @@
-# Queue management visualization website
+# Queue management simulation and visualization 
 
 This is the website deployed with streamlit package for Operations Management course.
 Its goal is to perform simulation of queueing based on the parameters provided by the user.
